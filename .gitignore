@@ -1,4 +1,14 @@
 node_modules
 .next
-.env.local
+out
 dist
+build
+coverage
+
+.env.local
+.env*.local
+
+.idea
+.vscode
+.DS_Store
+Thumbs.db
