@@ -1,3 +1,23 @@
+export async function createSubmission(payload: {
+    restaurantId: number;
+    sourceType: string;
+    rawText?: string;
+    items?: {
+        category: string;
+        name: string;
+        priceAmount: number;
+        currency: string;
+    }[];
+}) {
+    return fetchJSON(
+        "/submissions",
+        {
+            method: "POST",
+            body: JSON.stringify(payload)
+        },
+        { ok: true }
+    );
+}
 export type Restaurant = {
   id: number;
   name: string;
@@ -130,16 +150,6 @@ export async function getMenuItems(restaurantId: number): Promise<MenuItem[]> {
   return fetchJSON(`/menu-items?restaurantId=${restaurantId}`, undefined, mockMenus[restaurantId] || []);
 }
 
-export async function createSubmission(payload: {
-  restaurantId: number;
-  sourceType: string;
-  rawText: string;
-}) {
-  return fetchJSON("/submissions", {
-    method: "POST",
-    body: JSON.stringify(payload)
-  }, { ok: true });
-}
 
 export async function adminLogin(payload: { email: string; password: string }) {
   return fetchJSON("/auth/login", {
