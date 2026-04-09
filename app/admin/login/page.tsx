@@ -6,8 +6,8 @@ import { useRouter } from "next/navigation";
 
 export default function AdminLoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState("admin@menuhub.local");
-  const [password, setPassword] = useState("123456");
+  const [email, setEmail] = useState("admin");
+  const [password, setPassword] = useState("admin123");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -17,7 +17,7 @@ export default function AdminLoginPage() {
     setMessage("");
 
     try {
-      const result = await adminLogin({ email, password });
+      const result = await adminLogin({ username: email, password });
       if (typeof window !== "undefined" && (result as any)?.token) {
         localStorage.setItem("menuhub_admin_token", (result as any).token);
       }
@@ -41,12 +41,12 @@ export default function AdminLoginPage() {
 
         <form className="card form-grid" onSubmit={onSubmit}>
           <div>
-            <div className="small" style={{ marginBottom: 8 }}>E-posta</div>
+            <div className="small" style={{ marginBottom: 8 }}>Kullanıcı Adı</div>
             <input
               className="input"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="admin@menuhub.local"
+              placeholder="admin"
             />
           </div>
 

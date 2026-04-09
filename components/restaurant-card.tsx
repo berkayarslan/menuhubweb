@@ -3,7 +3,7 @@ import type { Restaurant } from "@/lib/api";
 
 export function RestaurantCard({ restaurant }: { restaurant: Restaurant }) {
   return (
-    <Link href={`/restaurants/${restaurant.id}`} className="card restaurant-card">
+    <div className="card restaurant-card">
       <div className="restaurant-top">
         <div>
           <h3>{restaurant.name}</h3>
@@ -17,6 +17,19 @@ export function RestaurantCard({ restaurant }: { restaurant: Restaurant }) {
         {restaurant.city && <span className="pill">{restaurant.city}</span>}
         {restaurant.district && <span className="pill">{restaurant.district}</span>}
       </div>
-    </Link>
+
+      <div style={{ display: "flex", gap: 12, marginTop: 16 }}>
+        <Link href={`/restaurants/${restaurant.id}`} style={{ flex: 1 }}>
+          <button className="btn btn-primary" style={{ width: "100%" }}>
+            Detaylar
+          </button>
+        </Link>
+        <Link href={`/menu/${restaurant.id}`} style={{ flex: 1 }}>
+          <button className="btn btn-secondary" style={{ width: "100%" }}>
+            Menüyü Gör
+          </button>
+        </Link>
+      </div>
+    </div>
   );
 }
