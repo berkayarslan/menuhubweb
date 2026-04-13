@@ -305,6 +305,21 @@ textarea {
   gap: 14px;
 }
 
+.restaurant-card-clickable {
+  cursor: pointer;
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.restaurant-card-clickable:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.1);
+}
+
+.restaurant-card-clickable:focus-visible {
+  outline: 3px solid rgba(31, 59, 115, 0.28);
+  outline-offset: 3px;
+}
+
 .restaurant-top {
   display: flex;
   justify-content: space-between;

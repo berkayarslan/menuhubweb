@@ -33,12 +33,16 @@ export default async function RestaurantSubmitPage({
                     </div>
 
                     <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-                        <Link href={`/restaurants/${restaurant.id}/submit`} className="btn btn-primary">
-                            Bu restorana katkı ver
+                        <Link href={`/menu/${restaurant.id}`} className="btn btn-secondary">
+                            Geri Dön
                         </Link>
 
+                        <a href="#katki-formu" className="btn btn-primary">
+                            Katkı Gönder
+                        </a>
+
                         <Link href="/explore" className="btn btn-secondary">
-                            Geri Dön
+                            Keşfet
                         </Link>
                     </div>
                 </div>
@@ -64,10 +68,12 @@ export default async function RestaurantSubmitPage({
                         </p>
                     </div>
 
-                    <SubmitForm
-                        restaurantId={restaurant.id}
-                        restaurantName={restaurant.name}
-                    />
+                    <div id="katki-formu">
+                        <SubmitForm
+                            restaurantId={restaurant.id}
+                            restaurantName={restaurant.name}
+                        />
+                    </div>
                 </div>
             </div>
         </main>

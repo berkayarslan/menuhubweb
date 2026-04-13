@@ -12,6 +12,9 @@ export default function SubmitPage() {
                     </p>
 
                     <div style={{ marginTop: 20 }}>
+                        <Link href="/" className="btn btn-secondary" style={{ marginRight: 10 }}>
+                            Geri Dön
+                        </Link>
                         <Link href="/explore" className="btn btn-primary">
                             Restoranları Keşfet
                         </Link>

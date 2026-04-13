@@ -20,6 +20,8 @@ export type MenuItem = {
   descriptionText?: string | null;
   priceAmount: number;
   currency: string;
+  status?: SubmissionStatus | string;
+  approved?: boolean;
   createdAt?: string;
   updatedAt?: string;
   approvedAt?: string;
@@ -105,7 +107,14 @@ function unwrapCollection<T>(payload: unknown): T[] {
   if (!payload || typeof payload !== "object") return [];
 
   const objectPayload = payload as Record<string, unknown>;
-  const candidates = [objectPayload.content, objectPayload.items, objectPayload.data];
+  const candidates = [
+    objectPayload.content,
+    objectPayload.items,
+    objectPayload.data,
+    objectPayload.results,
+    objectPayload.menuItems,
+    objectPayload.menu_items
+  ];
 
   for (const candidate of candidates) {
     if (Array.isArray(candidate)) return candidate as T[];
@@ -114,7 +123,24 @@ function unwrapCollection<T>(payload: unknown): T[] {
   return [];
 }
 
+function normalizeBooleanValue(value: unknown): boolean | undefined {
+  if (typeof value === "boolean") return value;
+  if (typeof value === "number") return value !== 0;
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    if (["true", "1", "yes", "approved"].includes(normalized)) return true;
+    if (["false", "0", "no", "rejected"].includes(normalized)) return false;
+  }
+  return undefined;
+}
+
 function normalizeSubmission(raw: Partial<Submission>): Submission {
+  const source = raw as Record<string, unknown>;
+  const createdAt = (source.createdAt as string) || (source.created_at as string) || undefined;
+  const approvedAt = (source.approvedAt as string) || (source.approved_at as string) || (source.approvalDate as string) || undefined;
+  const rejectedAt = (source.rejectedAt as string) || (source.rejected_at as string) || undefined;
+  const updatedAt = (source.updatedAt as string) || (source.updated_at as string) || undefined;
+
   return {
     id: Number(raw.id || 0),
     restaurantId: Number(raw.restaurantId || 0),
@@ -122,27 +148,110 @@ function normalizeSubmission(raw: Partial<Submission>): Submission {
     sourceType: raw.sourceType || "UNKNOWN",
     rawText: raw.rawText || "",
     status: normalizeSubmissionStatus(raw.status),
-    createdAt: raw.createdAt,
-    approvedAt: raw.approvedAt,
-    rejectedAt: raw.rejectedAt,
-    updatedAt: raw.updatedAt
+    createdAt,
+    approvedAt,
+    rejectedAt,
+    updatedAt
   };
 }
 
+function normalizeDateValue(value: unknown): string | undefined {
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : undefined;
+  }
+
+  if (typeof value === "number" && Number.isFinite(value) && value > 0) {
+    // Support both seconds and milliseconds timestamps.
+    const ms = value < 1_000_000_000_000 ? value * 1000 : value;
+    return new Date(ms).toISOString();
+  }
+
+  return undefined;
+}
+
 function normalizeMenuItem(raw: Partial<MenuItem>): MenuItem {
+  const source = raw as Record<string, unknown>;
+  const category = (source.category as string) || (source.categoryName as string) || "Diğer";
+  const descriptionText =
+    (source.descriptionText as string) ||
+    (source.description as string) ||
+    (source.description_text as string) ||
+    null;
+  const priceAmount =
+    Number(source.priceAmount || source.price || source.price_amount || 0);
+  const currency =
+    (source.currency as string) ||
+    (source.currencyCode as string) ||
+    (source.currency_code as string) ||
+    "TRY";
+  const createdAt =
+    normalizeDateValue(source.createdAt) ||
+    normalizeDateValue(source.created_at) ||
+    normalizeDateValue(source.createdDate) ||
+    normalizeDateValue(source.created_date) ||
+    undefined;
+  const updatedAt =
+    normalizeDateValue(source.updatedAt) ||
+    normalizeDateValue(source.updated_at) ||
+    normalizeDateValue(source.lastUpdatedAt) ||
+    normalizeDateValue(source.last_updated_at) ||
+    undefined;
+  const approvedAt =
+    normalizeDateValue(source.approvedAt) ||
+    normalizeDateValue(source.approved_at) ||
+    normalizeDateValue(source.approvalDate) ||
+    normalizeDateValue(source.approval_date) ||
+    normalizeDateValue(source.lastApprovedAt) ||
+    normalizeDateValue(source.last_approved_at) ||
+    normalizeDateValue(source.approvedOn) ||
+    normalizeDateValue(source.approved_on) ||
+    undefined;
+  const submittedAt =
+    normalizeDateValue(source.submittedAt) ||
+    normalizeDateValue(source.submitted_at) ||
+    normalizeDateValue(source.submittedDate) ||
+    normalizeDateValue(source.submitted_date) ||
+    undefined;
+  const rawStatus =
+    (source.status as string) ||
+    (source.itemStatus as string) ||
+    (source.menuItemStatus as string) ||
+    (source.submissionStatus as string) ||
+    "";
+  const normalizedStatus = rawStatus ? normalizeSubmissionStatus(rawStatus) : undefined;
+  const approvedFromField =
+    normalizeBooleanValue(source.approved) ??
+    normalizeBooleanValue(source.isApproved) ??
+    normalizeBooleanValue(source.is_approved);
+  const approved = approvedFromField ?? (normalizedStatus ? normalizedStatus === "APPROVED" : undefined);
+
   return {
     id: Number(raw.id || 0),
     restaurantId: raw.restaurantId ? Number(raw.restaurantId) : undefined,
-    category: raw.category || "Diğer",
+    category,
     name: raw.name || "İsimsiz ürün",
-    descriptionText: raw.descriptionText,
-    priceAmount: Number(raw.priceAmount || 0),
-    currency: raw.currency || "TRY",
-    createdAt: raw.createdAt,
-    updatedAt: raw.updatedAt,
-    approvedAt: raw.approvedAt,
-    submittedAt: raw.submittedAt
+    descriptionText,
+    priceAmount,
+    currency,
+    status: normalizedStatus || rawStatus || undefined,
+    approved,
+    createdAt,
+    updatedAt,
+    approvedAt,
+    submittedAt
   };
+}
+
+export function isApprovedMenuItem(item: MenuItem): boolean {
+  if (item.approved === true) return true;
+  const normalized = normalizeSubmissionStatus(item.status);
+  if (normalized === "APPROVED") return true;
+  return Boolean(item.approvedAt);
+}
+
+function hasApprovalSignal(item: MenuItem): boolean {
+  return item.approved === true || Boolean(item.approvedAt) || Boolean(item.status);
 }
 
 async function fetchJSON<T>(path: string, init?: RequestInit, fallback?: T): Promise<T> {
@@ -225,13 +334,32 @@ export async function getRestaurant(id: number): Promise<Restaurant | null> {
   return fetchJSON(`/restaurants/${id}`, undefined, fallback);
 }
 
-export async function getMenuItems(restaurantId: number): Promise<MenuItem[]> {
+export async function getMenuItems(
+  restaurantId: number,
+  options?: { approvedOnly?: boolean }
+): Promise<MenuItem[]> {
+  const approvedOnly = options?.approvedOnly === true;
+  const query = approvedOnly
+    ? `restaurantId=${restaurantId}&status=APPROVED`
+    : `restaurantId=${restaurantId}`;
+
   try {
-    const data = await fetchJSON<unknown>(`/menu-items?restaurantId=${restaurantId}`, undefined, mockMenus[restaurantId] || []);
-    return unwrapCollection<Partial<MenuItem>>(data).map(normalizeMenuItem);
+    const data = await fetchJSON<unknown>(`/menu-items?${query}`, undefined, mockMenus[restaurantId] || []);
+    const normalized = unwrapCollection<Partial<MenuItem>>(data).map(normalizeMenuItem);
+    if (!approvedOnly) return normalized;
+
+    const hasSignals = normalized.some(hasApprovalSignal);
+    return hasSignals ? normalized.filter(isApprovedMenuItem) : normalized;
   } catch {
-    const data = await fetchJSON<unknown>(`/restaurants/${restaurantId}/menu-items`, undefined, mockMenus[restaurantId] || []);
-    return unwrapCollection<Partial<MenuItem>>(data).map(normalizeMenuItem);
+    const path = approvedOnly
+      ? `/restaurants/${restaurantId}/menu-items?status=APPROVED`
+      : `/restaurants/${restaurantId}/menu-items`;
+    const data = await fetchJSON<unknown>(path, undefined, mockMenus[restaurantId] || []);
+    const normalized = unwrapCollection<Partial<MenuItem>>(data).map(normalizeMenuItem);
+    if (!approvedOnly) return normalized;
+
+    const hasSignals = normalized.some(hasApprovalSignal);
+    return hasSignals ? normalized.filter(isApprovedMenuItem) : normalized;
   }
 }
 
