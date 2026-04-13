@@ -1,9 +1,26 @@
+"use client";
+
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type { Restaurant } from "@/lib/api";
 
 export function RestaurantCard({ restaurant }: { restaurant: Restaurant }) {
+  const router = useRouter();
+
   return (
-    <div className="card restaurant-card">
+    <div
+      className="card restaurant-card restaurant-card-clickable"
+      role="link"
+      tabIndex={0}
+      onClick={() => router.push(`/menu/${restaurant.id}`)}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          router.push(`/menu/${restaurant.id}`);
+        }
+      }}
+      aria-label={`${restaurant.name} menü sayfasına git`}
+    >
       <div className="restaurant-top">
         <div>
           <h3>{restaurant.name}</h3>
@@ -19,12 +36,13 @@ export function RestaurantCard({ restaurant }: { restaurant: Restaurant }) {
       </div>
 
       <div style={{ display: "flex", gap: 12, marginTop: 16 }}>
-        <Link href={`/restaurants/${restaurant.id}`} style={{ flex: 1 }}>
-          <button className="btn btn-primary" style={{ width: "100%" }}>
-            Detaylar
-          </button>
-        </Link>
-        <Link href={`/menu/${restaurant.id}`} style={{ flex: 1 }}>
+        <Link
+          href={`/menu/${restaurant.id}`}
+          style={{ width: "100%" }}
+          onClick={(event) => {
+            event.stopPropagation();
+          }}
+        >
           <button className="btn btn-secondary" style={{ width: "100%" }}>
             Menüyü Gör
           </button>

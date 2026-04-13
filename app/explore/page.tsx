@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { RestaurantCard } from "@/components/restaurant-card";
 import { getRestaurants } from "@/lib/api";
 
@@ -15,6 +16,7 @@ export default async function ExplorePage() {
               sadece karar vermen için gereken bilgi.
             </p>
           </div>
+          <Link href="/" className="btn btn-secondary">Geri Dön</Link>
         </div>
 
         <div className="grid-3">

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
     deleteMenuItem,
@@ -107,6 +108,9 @@ export default function AdminMenuPage({ params }: { params: { id: string } }) {
         <main className="section">
             <div className="container">
                 <div style={{ marginBottom: 32 }}>
+                    <div style={{ marginBottom: 12 }}>
+                        <Link href="/admin/submissions" className="btn btn-secondary">Geri Dön</Link>
+                    </div>
                     <h1>{restaurant.name} - Menü Yönetimi</h1>
                     <p>Toplam {menuItems.length} ürün</p>
                     {message ? <div className="notice" style={{ marginTop: 12 }}>{message}</div> : null}

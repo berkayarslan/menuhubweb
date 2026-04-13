@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { AdminSubmissionsClient } from "@/components/admin-submissions-client";
 
 export default function AdminSubmissionsPage() {
@@ -12,6 +13,7 @@ export default function AdminSubmissionsPage() {
                             Onay / red akışı premium ama işlevsel bir yüzeyde tutulur.
                         </p>
                     </div>
+                    <Link href="/admin/login" className="btn btn-secondary">Geri Dön</Link>
                 </div>
 
                 <AdminSubmissionsClient />

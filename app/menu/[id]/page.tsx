@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
-import { getMenuItems, getRestaurant, type MenuItem, type Restaurant } from "@/lib/api";
+import { getMenuItems, getRestaurant, isApprovedMenuItem, type MenuItem, type Restaurant } from "@/lib/api";
 
 export default function MenuPage({ params }: { params: { id: string } }) {
     const restaurantId = parseInt(params.id);
@@ -15,7 +16,7 @@ export default function MenuPage({ params }: { params: { id: string } }) {
             try {
                 const [rest, items] = await Promise.all([
                     getRestaurant(restaurantId),
-                    getMenuItems(restaurantId)
+                    getMenuItems(restaurantId, { approvedOnly: true })
                 ]);
                 setRestaurant(rest);
                 setMenuItems(items);
@@ -42,8 +43,10 @@ export default function MenuPage({ params }: { params: { id: string } }) {
         return new Date(value).toLocaleString("tr-TR");
     }
 
-    // Group menu items by category
-    const groupedItems = menuItems.reduce((acc, item) => {
+    const approvedMenuItems = menuItems.filter((item) => isApprovedMenuItem(item));
+
+    // Group approved menu items by category
+    const groupedItems = approvedMenuItems.reduce((acc, item) => {
         if (!acc[item.category]) {
             acc[item.category] = [];
         }
@@ -52,18 +55,23 @@ export default function MenuPage({ params }: { params: { id: string } }) {
     }, {} as Record<string, MenuItem[]>);
 
     const categories = Object.keys(groupedItems).sort();
-    const lastMenuUpdate = menuItems
-        .map((item) => item.updatedAt || item.approvedAt || item.createdAt)
+    const lastMenuUpdate = approvedMenuItems
+        .map((item) => item.approvedAt || item.updatedAt)
         .filter(Boolean)
         .sort()
         .at(-1);
-    const isApprovedRestaurant = restaurant.approved === true || restaurant.approvalStatus === "APPROVED";
+    const restaurantStatus = (restaurant.approvalStatus || "").toUpperCase();
+    const isApprovedRestaurant = restaurant.approved === true || restaurantStatus === "APPROVED";
+    const isPendingRestaurant = restaurantStatus === "PENDING_REVIEW" || restaurantStatus === "PENDING" || restaurantStatus === "IN_REVIEW";
 
     return (
         <main className="section">
             <div className="container">
                 {/* Restaurant Header */}
                 <div className="card" style={{ marginBottom: 32 }}>
+                    <div style={{ marginBottom: 16 }}>
+                        <Link href="/explore" className="btn btn-secondary">Geri Dön</Link>
+                    </div>
                     <div style={{ marginBottom: 16 }}>
                         <h1 style={{ margin: "0 0 8px 0" }}>{restaurant.name}</h1>
                         <div style={{ color: "#64748b", fontSize: "14px", display: "flex", gap: 16, flexWrap: "wrap" }}>
@@ -74,21 +82,36 @@ export default function MenuPage({ params }: { params: { id: string } }) {
                     {restaurant.descriptionText && (
                         <p style={{ color: "#475569", margin: 0 }}>{restaurant.descriptionText}</p>
                     )}
-                    <div style={{ marginTop: 16, padding: "12px", backgroundColor: isApprovedRestaurant ? "#ecfdf5" : "#fff7ed", borderRadius: 8, color: isApprovedRestaurant ? "#047857" : "#b45309" }}>
-                        {isApprovedRestaurant ? "✅ Bu restoran menüsü onaylı" : "⏳ Bu restoranın menü katkıları inceleniyor"}
-                    </div>
+                    {isApprovedRestaurant || isPendingRestaurant ? (
+                        <div
+                            style={{
+                                marginTop: 16,
+                                padding: "12px",
+                                backgroundColor: isApprovedRestaurant ? "#ecfdf5" : "#fff7ed",
+                                borderRadius: 8,
+                                color: isApprovedRestaurant ? "#047857" : "#b45309"
+                            }}
+                        >
+                            {isApprovedRestaurant ? "✅ Bu restoran menüsü onaylı" : "⏳ Bu restoranın menü katkıları inceleniyor"}
+                        </div>
+                    ) : null}
                     <div className="small" style={{ marginTop: 12, display: "flex", gap: 16, flexWrap: "wrap" }}>
                         <span>Kategori: {categories.length}</span>
-                        <span>Ürün: {menuItems.length}</span>
+                        <span>Ürün: {approvedMenuItems.length}</span>
                         <span>Son Menü Güncelleme: {formatDate(lastMenuUpdate)}</span>
+                    </div>
+                    <div style={{ marginTop: 16 }}>
+                        <Link href={`/restaurants/${restaurant.id}`} className="btn btn-primary">
+                            Katkı Gönder
+                        </Link>
                     </div>
                 </div>
 
                 {/* Menu */}
                 {error ? (
                     <div className="card" style={{ color: "#dc2626" }}>{error}</div>
-                ) : menuItems.length === 0 ? (
-                    <div className="card">Menü öğesi bulunamadı</div>
+                ) : approvedMenuItems.length === 0 ? (
+                    <div className="card">Onaylı menü öğesi bulunamadı</div>
                 ) : (
                     <div>
                         {categories.map((category) => (
@@ -103,7 +126,10 @@ export default function MenuPage({ params }: { params: { id: string } }) {
                                     {category}
                                 </h2>
                                 <div style={{ display: "grid", gap: 16 }}>
-                                    {groupedItems[category]?.map((item) => (
+                                    {groupedItems[category]?.map((item) => {
+                                        const effectiveApprovedAt = item.approvedAt || item.updatedAt;
+
+                                        return (
                                         <div
                                             key={item.id}
                                             style={{
@@ -145,10 +171,11 @@ export default function MenuPage({ params }: { params: { id: string } }) {
                                             )}
                                             <div style={{ color: "#64748b", fontSize: "12px", marginTop: 8, display: "grid", gap: 2 }}>
                                                 <span>Katkı Tarihi: {formatDate(item.submittedAt || item.createdAt)}</span>
-                                                <span>Onay Tarihi: {formatDate(item.approvedAt)}</span>
+                                                <span>Onay Tarihi: {formatDate(effectiveApprovedAt)}</span>
                                             </div>
                                         </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
                             </div>
                         ))}

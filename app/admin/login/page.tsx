@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { adminLogin } from "@/lib/api";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 export default function AdminLoginPage() {
@@ -37,6 +38,7 @@ export default function AdminLoginPage() {
             <h2>Admin Girişi</h2>
             <p>Minimal ve dikkat dağıtmayan moderasyon girişi.</p>
           </div>
+          <Link href="/" className="btn btn-secondary">Geri Dön</Link>
         </div>
 
         <form className="card form-grid" onSubmit={onSubmit}>
